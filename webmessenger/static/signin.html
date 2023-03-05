@@ -1,0 +1,30 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход в систему</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+<div class="header">
+    <div class="inner-header">
+        <h1>Мессенджер</h1>
+        <ul class="navigation">
+                <a href="/signup" title="Регистрация" class="a_signup"><li>Регистрация</li></a>
+                <a href="#" title="Вход" class="a_signin"><li style="color: dodgerblue">Вход</li></a>
+        </ul>
+    </div>
+</div>
+<h1>Вход в систему</h1>
+<main class="main">
+        <label for="id_username">Username</label>
+            <p><input type="text" id="id_username" name="username" required></p>
+        <label for="id_password">Password</label>
+            <p><input type="password" id="id_password" name="password" required></p>
+        <button class="btn-signin">SignIn</button>
+<script type="module" src="{% static 'js/signin_proc.js' %}"></script>
+</main>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Чат комнаты</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+</head>
+<body>
+<div class="header">
+    <div class="inner-header">
+        <h1>Мессенджер</h1>
+        <ul class="navigation">
+                <a href="#" title="Выйти" class="a_logout"><li>Выйти</li></a>
+                <a href="/profile" title="Профиль" class="a_profile"><li>Профиль</li></a>
+                <a href="#" title="Список чат-комнат" class="a_rooms"><li style="color: dodgerblue">Список чат-комнат</li></a>
+        </ul>
+    </div>
+</div>
+<h1>Чат-комнат</h1>
+<main class="main_rooms">
+        <nav class="n_list_rooms">
+            <h3>Список чат-комнат</h3>
+            <ul class="l_list_rooms">
+
+            </ul>
+            <p><button class="btn_create_room">Создать чат</button></p>
+        </nav>
+        <aside class="as_room_detail">
+            <section class="sec_members">
+                <span>
+                    <span>Участники чата:</span>
+                    <span class="sp_members">'выберите чат'</span>
+                </span>
+            </section>
+            <section class="sec_room">
+                Выберите чат
+            </section>
+
+        </aside>
+</main>
+<script type="module" src="{% static 'js/rooms.js' %}"></script>
+</body>
+</html>

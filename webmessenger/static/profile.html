@@ -1,0 +1,36 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль пользователя</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+<div class="header">
+    <div class="inner-header">
+        <h1>Мессенджер</h1>
+        <ul class="navigation">
+                <a href="#" title="Выйти" class="a_logout"><li>Выйти</li></a>
+                <a href="#" title="Профиль" class="a_profile"><li style="color: dodgerblue">Профиль</li></a>
+                <a href="/rooms" title="Список чат-комнат" class="a_rooms"><li>Список чат-комнат</li></a>
+        </ul>
+    </div>
+</div>
+<h1>Мой профиль</h1>
+<main class="main">
+        <div class="block_username">
+            <label for="id_username">Никнейм:</label>
+            <input type="text" class="inp_username" id="id_username">
+        </div>
+        <div class="block_photo">
+            <label for="id_photo">Аватар:</label>
+            <img id="id_photo" class="img_photo" alt="Userphoto">
+            <input type="file" class="input_upload" accept=".jpg, .jpeg, .png"/>
+            <button class="btn_upload">Обновить</button>
+    </div>
+</main>
+<script type="module" src="{% static 'js/profile_proc.js' %}"></script>
+</body>
+</html>

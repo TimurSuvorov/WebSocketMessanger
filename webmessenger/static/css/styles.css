@@ -1,0 +1,130 @@
+.header {
+    background-color: #101010;
+    color: white;
+    font-family: "Lato", sans-serif;
+}
+
+.inner-header {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.inner-header h1 {
+    display: flex;
+    padding: 0 0 0 40px;
+    height: 100%;
+}
+
+.header .inner-header .navigation a{
+    height: 100%;
+    display: table;
+    float: left;
+    padding: 0 20px;
+    background-color: #101010;
+    text-decoration: none
+}
+
+.navigation a li{
+    vertical-align: middle;
+    display: table-cell;
+    font-size: 20px;
+    color: white;
+}
+
+.navigation a li:hover{
+    color: #95b2f1;
+    text-decoration: underline;
+    text-decoration-color: blue;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 25%;
+}
+
+
+
+.block_photo {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.block_username {
+    display: flex;
+    flex-direction: column;
+}
+
+.img_photo {
+    max-width: 300px;
+}
+
+.main_rooms {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: row;
+    border-width: thin;
+    border-style: solid;
+    border-color: grey;
+}
+
+.main_rooms .n_list_rooms {
+    width: 25%;
+    min-width: fit-content;
+    border-width: thin;
+    border-style: solid;
+    border-color: grey;
+    padding: 10px;
+}
+
+.main_rooms .l_list_rooms {
+    list-style-type: disclosure-closed;
+}
+
+.as_room_detail {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100vw;
+    min-width: fit-content;
+    border-width: thin;
+    border-style: solid;
+    border-color: grey;
+    padding: 30px 10px;
+}
+
+.b_room {
+    background: burlywood;
+    border-radius: 10px;
+}
+
+.b_room:hover {
+    background: #eef1f6;
+    font-style: oblique;
+}
+
+.b_room:active {
+    box-shadow: inset -2px -2px 3px rgba(255, 255, 255, 0.6), inset 2px 2px 3px rgba(0, 0, 0, 0.6);
+}
+
+.hidden {
+  display: none;
+}
+
+.sec_room {
+    min-height: 200px;
+    padding-top: 30px;
+}
+
+.sec_members {
+    border-width: thin;
+    border-style: solid;
+    border-color: grey;
+    background-color: #e0e0e0;
+    font-size: 22px;
+}

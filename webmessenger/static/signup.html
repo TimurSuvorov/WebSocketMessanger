@@ -1,0 +1,33 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SignUp</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+<div class="header">
+    <div class="inner-header">
+        <h1>Мессенджер</h1>
+        <ul class="navigation">
+                <a href="#" title="Регистрация" class="a_signup"><li style="color: dodgerblue">Регистрация</li></a>
+                <a href="/signin" title="Вход" class="a_signin"><li>Вход</li></a>
+        </ul>
+    </div>
+</div>
+<h1>Регистрация</h1>
+<main class="main">
+        <label for="id_email">E-mail</label>
+            <p><input type="email" id="id_email" name="email" required></p>
+        <label for="id_username">Username</label>
+            <p><input type="text" id="id_username" name="username" required></p>
+        <label for="id_password">Password</label>
+            <p><input type="password" id="id_password" name="password" required></p>
+        <button class="btn-signup btn-primary">SignUp</button>
+
+<script type="module" src="{% static 'js/signup_proc.js' %}"></script>
+</main>
+</body>
+</html>
