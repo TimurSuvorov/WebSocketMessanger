@@ -41,20 +41,20 @@ async function renderListRoom () {
             const elemRoom = document.createElement('li');
             elemRoom.innerHTML = `
             <span>
-                <a id="label_room-${name}" style="font-size: 22px">${name}</a>
+                <a id="label_room-${id}" style="font-size: 22px">${name}</a>
                 <div class="d_btns_room">
-                    <button id="btn-ent-${name}" class="b_room btn_enter btn btn-success">Войти</button>
-                    <button id="btn-ex-${name}" class="b_room btn_exit btn btn-success hidden">Выйти</button>
-                    <button id="btn-rm-${name}" class="b_room btn_remove btn btn-success hidden">Удалить</button>
+                    <button id="btn-ent-${id}" class="btn_enter btn-sm btn-success">Войти</button>
+                    <button id="btn-ex-${id}" class="btn_exit btn-sm btn-success hidden">Выйти</button>
+                    <button id="btn-rm-${id}" class="btn_remove btn-sm btn-success hidden">Удалить</button>
                 </div>
             </span>
             <hr>
         `
             l_list_rooms.appendChild(elemRoom);
-            const btn_enter = document.querySelector(`#btn-ent-${name}`)
-            const btn_exit = document.querySelector(`#btn-ex-${name}`)
-            const btn_remove = document.querySelector(`#btn-rm-${name}`)
-            const label_room = document.querySelector(`#label_room-${name}`)
+            const btn_enter = document.querySelector(`#btn-ent-${id}`)
+            const btn_exit = document.querySelector(`#btn-ex-${id}`)
+            const btn_remove = document.querySelector(`#btn-rm-${id}`)
+            const label_room = document.querySelector(`#label_room-${id}`)
             //Добавление кнопок "Очистить" и "Удалить", если автор
             if (profileInfo.username === author) {
                 btn_remove.classList.remove('hidden')
@@ -92,9 +92,9 @@ async function renderListRoom () {
 // Opening WebSocket
 function chatOpenWebSocket(btnNode) {
     if (chatSocket) {
-        let opened_name = chatSocket.url.match(/.*rooms\/(.*)\//)[1]
-        document.querySelector(`#btn-ex-${opened_name}`).classList.add('hidden')
-        document.querySelector(`#btn-ent-${opened_name}`).classList.remove('hidden')
+        let id = chatSocket.url.match(/.*rooms\/(.*)\//)[1]
+        document.querySelector(`#btn-ex-${id}`).classList.add('hidden')
+        document.querySelector(`#btn-ent-${id}`).classList.remove('hidden')
         chatSocket.close()
     }
     const roomName = btnNode.id.match(/^btn-[a-z]*-(.*)$/)[1]  // Get room name from button id

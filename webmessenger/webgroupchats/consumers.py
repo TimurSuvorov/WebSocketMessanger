@@ -12,18 +12,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
+        self.pk = None
         self.room_name = None
-        self.room_group_name = None
+        self.room_group_pk = None
         self.room = None
         self.user = None
 
     @database_sync_to_async
     def get_room(self):
-        return Room.objects.get(name=self.room_name)
+        return Room.objects.get(pk=self.pk)
+
+    @database_sync_to_async
+    def get_room_name(self):
+        return Room.objects.get(pk=self.pk).name
 
     @database_sync_to_async
     def remove_room(self):
-        Room.objects.get(name=self.room_name).delete()
+        Room.objects.get(pk=self.pk).delete()
 
     @database_sync_to_async
     def add_to_room(self):
@@ -39,15 +44,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         # Define attributes
-        self.room_name = self.scope["url_route"]["kwargs"]["room_name"]  # берем имя комнаты из URL
-        self.room_group_name = f"chat_{self.room_name}"  # Создаем имя группы на основе имени комнаты
+        self.pk = self.scope["url_route"]["kwargs"]["pk"]  # берем имя комнаты из URL
+        self.room_name = await self.get_room_name()
+        self.room_group_pk = f"chat_{self.pk}"  # Создаем имя группы на основе pk комнаты
         self.user = self.scope['user']
         self.room = await self.get_room()
 
         if self.user.is_authenticated:
             # Add channel to group
             await self.channel_layer.group_add(  # В channel_layer добавляем в группу соединение с именем channel_name
-                self.room_group_name,
+                self.room_group_pk,
                 self.channel_name
             )
             await self.accept()
@@ -65,7 +71,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             # Send service message with members of room
             await self.channel_layer.group_send(
-                self.room_group_name, {
+                self.room_group_pk, {
                     "type": "user_join_members",
                     "username": self.scope['user'].username,
                     "members": await self.get_members()
@@ -79,7 +85,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.remove_from_room()
             # Send service message with members of room
             await self.channel_layer.group_send(
-                self.room_group_name, {
+                self.room_group_pk, {
                     "type": "user_leave_members",
                     "username": self.scope['user'].username,
                     "members": await self.get_members()
@@ -87,7 +93,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
             # Leave room group
             await self.channel_layer.group_discard(
-                self.room_group_name,
+                self.room_group_pk,
                 self.channel_name
             )
 
@@ -95,31 +101,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         text_data_json = json.loads(text_data)
 
-        # Команда на удаление комнаты
-        if text_data_json.get('remove_room', None):
-            await self.channel_layer.group_send(
-                self.room_group_name, {
-                    "type": "chat_message",
-                    "username": 'INFO',
-                    "message": 'Группа была удалена владельцем! Пожалуйста, обновите страницу!'
-                }
-            )
-            await self.channel_layer.group_discard(
-                self.room_group_name,
-                self.channel_name
-            )
-        else:
-            message = text_data_json.get('message', None)
-            await self.channel_layer.group_send(
-                self.room_group_name, {
-                    "type": "chat_message",
-                    "username": self.scope['user'].username,
-                    "message": message
-                }
-            )
+        message = text_data_json.get('message', None)
+        await self.channel_layer.group_send(
+            self.room_group_pk, {
+                "type": "chat_message",
+                "username": self.scope['user'].username,
+                "message": message
+            }
+        )
 
-            if not self.user.is_authenticated:
-                return
+        if not self.user.is_authenticated:
+            return
 
     # Methods for message's types
 
