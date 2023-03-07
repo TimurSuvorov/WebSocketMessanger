@@ -27,12 +27,22 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Daphne+Chpython3 manage.py shellannels
+ASGI_APPLICATION = "webmessenger.asgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
+}
 # Authentication schemes
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -43,6 +53,7 @@ REST_FRAMEWORK = {
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -164,3 +175,4 @@ CORS_ALLOW_ALL_ORIGINS = True
 DJOSER = {
     'SERIALIZERS': {'current_user': 'webgroupchats.serializer.CustomUserSerializer'},
 }
+

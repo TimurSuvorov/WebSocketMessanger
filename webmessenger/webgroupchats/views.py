@@ -1,4 +1,5 @@
 from rest_framework import generics, status, viewsets, mixins
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import TemplateHTMLRenderer
@@ -65,7 +66,6 @@ class RoomViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         room_instance = serializer.save(author=self.request.user)
-        room_instance.members.add(self.request.user)
         room_instance.save()
 
     def destroy(self, request, *args, **kwargs):

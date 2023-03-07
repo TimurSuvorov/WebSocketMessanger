@@ -19,3 +19,9 @@ class IsOwner(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return obj == request.user
+
+
+class IsAuthenticatedByToken(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        pass
