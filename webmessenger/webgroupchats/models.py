@@ -15,7 +15,10 @@ class Message(models.Model):
     content = models.CharField(max_length=1024)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     room = models.ForeignKey('Room', on_delete=models.CASCADE)
-    create_time = models.DateTimeField(auto_created=True)
+    create_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('create_time',)
 
     def __str__(self):
         return self.content[:10]

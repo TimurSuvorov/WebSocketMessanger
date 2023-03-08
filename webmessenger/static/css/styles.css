@@ -33,6 +33,14 @@
     margin: 0;
 }
 
+#chat-log {
+    height: 400px;
+    background-color: #FFFFFF;
+    resize: none;
+    width: 100%;
+    min-width: 524px;
+}
+
 .navigation a li{
     vertical-align: middle;
     display: table-cell;

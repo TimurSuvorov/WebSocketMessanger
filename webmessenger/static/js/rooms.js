@@ -54,29 +54,23 @@ async function renderListRoom () {
             const btn_enter = document.querySelector(`#btn-ent-${id}`)
             const btn_exit = document.querySelector(`#btn-ex-${id}`)
             const btn_remove = document.querySelector(`#btn-rm-${id}`)
-            const label_room = document.querySelector(`#label_room-${id}`)
             //Добавление кнопок "Очистить" и "Удалить", если автор
             if (profileInfo.username === author) {
                 btn_remove.classList.remove('hidden')
             }
-            label_room.addEventListener('click', async () => {
-                const members_json = await getMembers(room_url);
-                sp_members.innerHTML = '';
-                members_json.members.forEach((member) => {
-                    sp_members.innerHTML += member + "; "
-                })
-            })
 
-            btn_enter.addEventListener('click', () => {
+            btn_enter.addEventListener('click', async () => {
                 chatOpenWebSocket(btn_enter);
-                btn_enter.classList.add('hidden')
-                btn_exit.classList.remove('hidden')
+                document.querySelector('#title_room').innerHTML = 'Комната ' + name;
+                btn_enter.classList.add('hidden');
+                btn_exit.classList.remove('hidden');
             })
 
             btn_exit.addEventListener('click', () => {
                 chatCloseWebSocket(btn_exit);
-                btn_exit.classList.add('hidden')
-                btn_enter.classList.remove('hidden')
+                btn_exit.classList.add('hidden');
+                btn_enter.classList.remove('hidden');
+                document.querySelector('#title_room').innerHTML = 'Войдите в чат';
                 document.querySelector('#chat-log').value = 'Вы вышли из чатов';
                 document.querySelector('#membersSelector').innerHTML = '';
             })
@@ -97,20 +91,33 @@ function chatOpenWebSocket(btnNode) {
         document.querySelector(`#btn-ent-${id}`).classList.remove('hidden')
         chatSocket.close()
     }
-    const roomName = btnNode.id.match(/^btn-[a-z]*-(.*)$/)[1]  // Get room name from button id
+    const roomId = btnNode.id.match(/^btn-[a-z]*-(.*)$/)[1]  // Get room name from button id
     chatSocket = new WebSocket(
         'ws://'
         + window.location.host
         + '/ws/rooms/'
-        + roomName
+        + roomId
         + '/?token='
         + getToken()
     );
 
-    chatSocket.onopen = function (e) {
-
-        document.querySelector('#chat-log').value = ''
-        document.querySelector('#membersSelector').innerHTML = '';
+    chatSocket.onopen = async function (e) {
+        document.querySelector('#chat-log').value = '';  // Очищаем окно сообщений
+        document.querySelector('#membersSelector').innerHTML = '';  // Очищаем окно пользователей
+        let chat_log = document.querySelector('#chat-log');
+        const room_url = `http://127.0.0.1:8000/api/v1/messeges_room/${roomId}`;  // Формируем URL комнаты для запроса сообщений
+        const messages_log = await getMessages(room_url);
+        messages_log.forEach((message_log) => {
+            let data_time = new Date (message_log.create_time);
+            const data_time_format = `${('0' + data_time.getDate()).slice(-2)}.${('0' + (data_time.getMonth() + 1)).slice(-2)} ${('0' + data_time.getHours()).slice(-2)}:${('0' + data_time.getMinutes()).slice(-2)}`;
+            let username = message_log.author;
+            let message = message_log.content;
+            chat_log.value += (`${data_time_format}  ${username}:\n  ${message}` + '\n');
+            });
+        if (messages_log.length) {
+            chat_log.value += '^^^^^^^^^^ История сообщений ^^^^^^^^^^' + '\n';
+            chat_log.scrollTop = chat_log.scrollHeight;
+            }
         console.log('Socker has been opened')
     }
 
@@ -130,7 +137,9 @@ function chatOpenWebSocket(btnNode) {
             memberOptionAdd(data.username);
             break;
         case "chat_message":
-            document.querySelector('#chat-log').value += (`${data.username}: ${data.message}` + '\n');
+            let chat_log = document.querySelector('#chat-log');
+            chat_log.value += (`${data.time}  ${data.username}:\n  ${data.message}` + '\n');
+            chat_log.scrollTop = chat_log.scrollHeight;
             break;
         case "user_leave_members":
             memberOptionRemove(data.username);
@@ -166,9 +175,9 @@ function chatOpenWebSocket(btnNode) {
     };
 }
 
-    document.querySelector('#chat-message-clear').onclick = function (e) {
-        document.querySelector('#chat-log').value = '';
-    }
+document.querySelector('#chat-message-clear').onclick = function (e) {
+    document.querySelector('#chat-log').value = '';
+}
 
 
 // Closing WebSocket
@@ -200,6 +209,13 @@ async function removeRoomRenderList(room_url) {
 async function getMembers(room_url) {
     const members_url = room_url + 'members/'
     const response = await fetch(members_url, requestGetOption())
+    if (response.ok) {
+        return await response.json()
+    }
+}
+
+async function getMessages(room_url) {
+    const response = await fetch(room_url, requestGetOption())
     if (response.ok) {
         return await response.json()
     }

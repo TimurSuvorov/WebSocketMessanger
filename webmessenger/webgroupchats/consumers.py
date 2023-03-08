@@ -1,3 +1,4 @@
+import datetime
 import json
 from pprint import pprint
 
@@ -5,7 +6,7 @@ from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-from webgroupchats.models import Room
+from webgroupchats.models import Room, Message
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -42,6 +43,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def get_members(self):
         return list(self.room.members.values_list('username', flat=True))
 
+    @database_sync_to_async
+    def save_messages(self, message):
+        user = self.user
+        room = self.room
+        Message.objects.create(content=message,
+                               author=user,
+                               room=room
+                               )
+
     async def connect(self):
         # Define attributes
         self.pk = self.scope["url_route"]["kwargs"]["pk"]  # берем имя комнаты из URL
@@ -64,7 +74,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Send welcome message only to user
             await self.send(text_data=json.dumps({
                 "type": "only_for_user",
-                "message": f'Привет {self.user.username}. Добро пожаловать в чат "{self.room_name}".',
+                "message": f'>Здравствуйте! {self.user.username}. Добро пожаловать в чат "{self.room_name}"<',
                 "members": await self.get_members()
                 })
             )
@@ -105,10 +115,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(
             self.room_group_pk, {
                 "type": "chat_message",
+                "time": datetime.datetime.utcnow().strftime('%d.%m %H:%M'),
                 "username": self.scope['user'].username,
                 "message": message
             }
         )
+
+        await self.save_messages(message)
 
         if not self.user.is_authenticated:
             return
