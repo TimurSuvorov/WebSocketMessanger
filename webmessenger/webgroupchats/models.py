@@ -31,11 +31,10 @@ class Room(models.Model):
                             unique=True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='room_author')
     members = models.ManyToManyField(User, through='UserRoom', blank=True)
+    private = models.BooleanField(default=0)
 
     def __str__(self):
         return self.name
-
-
 
 
 class UserRoom(models.Model):

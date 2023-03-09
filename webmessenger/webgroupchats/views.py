@@ -1,5 +1,5 @@
 from rest_framework import generics, status, viewsets, mixins
-from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import TemplateHTMLRenderer
@@ -50,6 +50,16 @@ class ProfileViewSet(mixins.RetrieveModelMixin,
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
+
+    def get_queryset(self):
+        if self.request.GET.get('private', ''):
+            token = self.request.META.get('HTTP_AUTHORIZATION', '')[6:]
+            user = Token.objects.get(pk=token).user
+            queryset = Room.objects.filter(author=user, private=1)
+        else:
+            queryset = Room.objects.filter(private=0)
+
+        return queryset
 
     @action(methods=['get'], detail=True)
     def members(self, request, pk=None):

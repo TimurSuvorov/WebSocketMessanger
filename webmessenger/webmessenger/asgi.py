@@ -15,7 +15,7 @@ from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
 
 import webgroupchats.routing
-from webgroupchats.token_auth import TokenAuthMiddleware
+from webgroupchats.middleware_authtoken import TokenAuthMiddleware
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'webmessenger.settings')
 
