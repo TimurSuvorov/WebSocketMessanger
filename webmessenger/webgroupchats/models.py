@@ -25,16 +25,45 @@ class Message(models.Model):
 
 
 class Room(models.Model):
+    ROOM_TYPE = [
+        ('common', 'common'),
+        ('private', 'private'),
+        ('tetatet', 'tetatet')
+    ]
+
     name = models.CharField(max_length=64,
                             blank=False,
                             null=False,
-                            unique=True)
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='room_author')
-    members = models.ManyToManyField(User, through='UserRoom', blank=True)
-    private = models.BooleanField(default=0)
+                            unique=True,
+                            )
+    author = models.ManyToManyField(settings.AUTH_USER_MODEL,
+                                    through='AuthorRoom',
+                                    blank=True,
+                                    related_name='room_author',
+                                    )
+    members = models.ManyToManyField(settings.AUTH_USER_MODEL,
+                                     through='UserRoom',
+                                     blank=True,
+                                     related_name='room_member',
+                                     )
+    type = models.CharField(max_length=16,
+                            choices=ROOM_TYPE,
+                            default='common',
+                            )
+    label = models.CharField(max_length=64,
+                             )
+
 
     def __str__(self):
-        return self.name
+        return f'{self.name}'
+
+
+class AuthorRoom(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.user}:{self.room}'
 
 
 class UserRoom(models.Model):
@@ -42,5 +71,5 @@ class UserRoom(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.user} in {self.room.name}'
+        return f'{self.user}:{self.room.name}'
 

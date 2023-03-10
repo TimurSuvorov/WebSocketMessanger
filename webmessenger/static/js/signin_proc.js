@@ -1,4 +1,8 @@
-import {insertToEndElement, badResponseProc} from './utils.js'
+import {insertToEndElement, badResponseProc, getToken} from './utils.js'
+
+if (getToken()) {
+    window.location.replace('/rooms')
+}
 
 const btn_signin = document.querySelector('.btn-signin');
 const container = document.querySelector('.main');

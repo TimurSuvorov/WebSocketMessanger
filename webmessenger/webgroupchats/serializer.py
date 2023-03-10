@@ -21,16 +21,17 @@ class CustomUserSerializer(UserSerializer):
 
 
 class RoomSerializer(serializers.HyperlinkedModelSerializer):
-    author = serializers.SlugRelatedField(read_only=True,
-                                          slug_field='username')
+    author = serializers.StringRelatedField(many=True,
+                                            read_only=True
+                                            )
     members = serializers.StringRelatedField(many=True,
                                              read_only=True)
     room_url = serializers.HyperlinkedIdentityField(view_name='room-detail')
 
     class Meta:
         model = Room
-        fields = ('id', 'name', 'author', 'members', 'room_url',)
-        read_only_fields = ('author', 'members', 'room_url',)
+        fields = ('id', 'name', 'author', 'members', 'room_url', 'label')
+        read_only_fields = ('author', 'members', 'room_url', 'label')
 
 
 class MembersRoomSerializer(serializers.ModelSerializer):

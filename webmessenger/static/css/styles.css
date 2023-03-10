@@ -96,7 +96,7 @@
     padding: 10px;
 }
 
-.main_rooms .l_list_rooms {
+.main_rooms .l_private_rooms {
     list-style-type: disclosure-closed;
 }
 
@@ -128,4 +128,37 @@
     border-color: grey;
     background-color: #e0e0e0;
     font-size: 22px;
+}
+
+
+@keyframes change_opacity_fast {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes change_opacity_blinked {
+  0% {
+    opacity: 0;
+  }
+  33% {
+    opacity: 1;
+  }
+  66% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.room_options_fast {
+    animation: change_opacity_fast 0.7s;
+}
+
+.room_options_blinked {
+    animation: change_opacity_blinked 2s;
 }

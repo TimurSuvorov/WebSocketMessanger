@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.shortcuts import redirect
 from django.urls import path, include, re_path
 from django.views.static import serve
 from rest_framework import routers
@@ -27,8 +28,9 @@ router.register(r'room', RoomViewSet)
 router.register(r'userprofile', ProfileViewSet)
 
 urlpatterns = [
-    path('api/v1/auth/', include('djoser.urls')),
     path('admin/', admin.site.urls),
+    path('', redirect_view),
+    path('api/v1/auth/', include('djoser.urls')),
     path('signup/', SignUpHTML.as_view()),
     path('signin/', SignInHTML.as_view()),
     path('profile/', ProfileHTML.as_view()),
@@ -36,7 +38,7 @@ urlpatterns = [
     path('api/v1/', include(router.urls)),
     path('api/v1/join_room/<int:pk>', JoinRoomAPIView.as_view()),
     path('api/v1/leave_room/<int:pk>', LeaveRoomAPIView.as_view()),
-    path('api/v1/messeges_room/<int:pk>', MessegesRoomAPIView.as_view()),
+    path('api/v1/messeges_room/<int:pk>', MessagesRoomAPIView.as_view()),
     # path('api/v1/userprofile/<int:pk>', ProfileViewSet.as_view()),
     # path('api/v1/edit_userprofile/<int:pk>', ProfileViewSet.as_view()),
 

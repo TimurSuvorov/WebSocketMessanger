@@ -2,81 +2,59 @@ import {getProfileInfo, getToken, logOut, requestGetOption, requestUpdateOption}
 
 let chatSocket;
 
-const l_list_rooms = document.querySelector('.l_list_rooms');
-const btn_create_room = document.querySelector('.btn_create_room')
-const href_logout = document.querySelector('.a_logout')
-const sp_members = document.querySelector('.sp_members')
+const l_private_rooms = document.querySelector('.l_private_rooms');
+const l_common_rooms = document.querySelector('.l_common_rooms');
+const l_tetatet_rooms = document.querySelector('.l_tetatet_rooms');
+const btn_create_room = document.querySelector('.btn_create_room');
+const href_logout = document.querySelector('.a_logout');
+const membersSelector = document.querySelector('#membersSelector');
+const chat_message_input = document.querySelector('#chat-message-input');
+
 
 if (!getToken()) {
     window.location.replace('/signin')
 }
 
-btn_create_room.focus()
+btn_create_room.focus();
 
-await renderListRoom()
+await renderListRoom();
 
-href_logout.addEventListener('click', () => logOut())
-btn_create_room.addEventListener('click', () => createRoom())
-
+href_logout.addEventListener('click', () => logOut());
+btn_create_room.addEventListener('click', () => createRoom());
+membersSelector.addEventListener('click', (e) => {
+    chat_message_input.value = `/only_to ${e.target.value} `
+});
 
 
 
 async function renderListRoom () {
-    const common_rooms_response = await fetch('http://127.0.0.1:8000/api/v1/room/', requestGetOption())
-    const common_rooms_json = await common_rooms_response.json()
-    const private_rooms_response = await fetch('http://127.0.0.1:8000/api/v1/room/?private=1', requestGetOption())
-    const private_rooms_json = await private_rooms_response.json()
-    const rooms_json = private_rooms_json.concat(common_rooms_json)
-    console.log(rooms_json)
+    const common_rooms_response = await fetch('http://127.0.0.1:8000/api/v1/room/?type=common', requestGetOption());
+    const common_rooms_json = await common_rooms_response.json();
+    const private_rooms_response = await fetch('http://127.0.0.1:8000/api/v1/room/?type=private', requestGetOption());
+    const private_rooms_json = await private_rooms_response.json();
+    const tetatet_rooms_response = await fetch('http://127.0.0.1:8000/api/v1/room/?type=tetatet', requestGetOption());
+    const tetatet_rooms_json = await tetatet_rooms_response.json();
+    const all_rooms_json = [private_rooms_json, common_rooms_json, tetatet_rooms_json]; // Объединяем массивы разных типов чатов в один массив
+    const all_rooms_nodes = [l_private_rooms, l_common_rooms, l_tetatet_rooms];
     const profileInfo = await getProfileInfo();
-    l_list_rooms.innerHTML = ''
-    rooms_json.forEach((room_json, index) => {
-        let id = room_json.id;
-        let name = ((index !== 0) ? room_json.name : 'Личные сообщения');
-        let author = room_json.author;
-        let room_url = room_json.room_url;
-        const elemRoom = document.createElement('li');
-        elemRoom.innerHTML = `
-        <span>
-            <a id="label_room-${id}" style="font-size: 22px">${name}</a>
-            <div class="d_btns_room">
-                <button id="btn-ent-${id}" class="btn_enter btn-sm btn-success">Войти</button>
-                <button id="btn-ex-${id}" class="btn_exit btn-sm btn-success hidden">Выйти</button>
-                <button id="btn-rm-${id}" class="btn_remove btn-sm btn-success hidden">Удалить</button>
-            </div>
-        </span>
-        <hr>
-    `
-        l_list_rooms.appendChild(elemRoom);
-        const btn_enter = document.querySelector(`#btn-ent-${id}`)
-        const btn_exit = document.querySelector(`#btn-ex-${id}`)
-        const btn_remove = document.querySelector(`#btn-rm-${id}`)
-        if (profileInfo.username === author && index !== 0) {  // В первом в списке комнат идёт всегда приватная
-            btn_remove.classList.remove('hidden')
-        }
-
-        btn_enter.addEventListener('click', async () => {
-            chatOpenWebSocket(btn_enter);
-            document.querySelector('#title_room').innerHTML = `Комната <${name}>`;
-            btn_enter.classList.add('hidden');
-            btn_exit.classList.remove('hidden');
-        })
-
-        btn_exit.addEventListener('click', () => {
-            chatCloseWebSocket(btn_exit);
-            btn_exit.classList.add('hidden');
-            btn_enter.classList.remove('hidden');
-            document.querySelector('#title_room').innerHTML = 'Войдите в чат';
-            document.querySelector('#chat-log').value = 'Вы вышли из чатов';
-            document.querySelector('#membersSelector').innerHTML = '';
-        })
-
-        btn_remove.addEventListener('click', async () => {
-            chatCloseWebSocket(btn_remove);
-            await removeRoomRenderList(room_url);
-        })
-    })
+    l_private_rooms.innerHTML = '';
+    l_common_rooms.innerHTML = '';
+    l_tetatet_rooms.innerHTML = '';
+    let i = 0;
+    all_rooms_json.forEach((typed_rooms) => {
+        const list_node = all_rooms_nodes[i];
+        i++;
+        typed_rooms.forEach((room_json) => {
+            let id = room_json.id;
+            let name = room_json.name;
+            let author = room_json.author;
+            let room_url = room_json.room_url;
+            let label = room_json.label;
+            createRoomNode(id, label, author, room_url, profileInfo, list_node, "room_options_fast")
+        });
+    });
 }
+
 
 // Opening WebSocket
 function chatOpenWebSocket(btnNode) {
@@ -97,9 +75,9 @@ function chatOpenWebSocket(btnNode) {
     );
 
     chatSocket.onopen = async function (e) {
-        document.querySelector('#chat-log').value = '';  // Очищаем окно сообщений
+        let chat_log = document.querySelector('#chat-log')
+        chat_log.value = ''  // Очищаем окно сообщений
         document.querySelector('#membersSelector').innerHTML = '';  // Очищаем окно пользователей
-        let chat_log = document.querySelector('#chat-log');
         const room_url = `http://127.0.0.1:8000/api/v1/messeges_room/${roomId}`;  // Формируем URL комнаты для запроса сообщений
         const messages_log = await getMessages(room_url);
         messages_log.forEach((message_log) => {
@@ -110,36 +88,49 @@ function chatOpenWebSocket(btnNode) {
             });
         if (messages_log.length) {
             chat_log.value += '^^^^^^^^^^ История сообщений ^^^^^^^^^^' + '\n';
-            chat_log.scrollTop = chat_log.scrollHeight;
+            chat_log.scrollTop = document.querySelector('#chat-log').scrollHeight;
             }
         console.log('Socker has been opened')
     }
 
-    chatSocket.onmessage = function (e) {
+    chatSocket.onmessage = async function (e) {
     const data = JSON.parse(e.data);
+    let chat_log = document.querySelector('#chat-log');
         console.log(data.type)
     switch (data.type) {
         case 'only_for_user': // личное сообщение из группы
-            document.querySelector('#chat-log').value += (data.message + '\n');
             document.querySelector('#membersSelector').innerHTML = '';
-            const list_members = data.members;
-            list_members.forEach((member) => {
-                memberOptionAdd(member);
-            })
+            data.members.forEach((member) => memberOptionAdd(member))
+            break;
+        case "chat_deleted_message":
+            chat_log.value += data.message + "\n"
             break;
         case "user_join_members":
             memberOptionAdd(data.username);
             break;
+        case "user_leave_members":
+            memberOptionRemove(data.username);
+            break;
         case "chat_message":
-            let chat_log = document.querySelector('#chat-log');
-            console.log(data.time)
             const data_time_format = formatedDateTime(data.time);
-            console.log(data_time_format)
             chat_log.value += (`${data_time_format}  ${data.username}:\n  ${data.message}` + '\n');
             chat_log.scrollTop = chat_log.scrollHeight;
             break;
-        case "user_leave_members":
-            memberOptionRemove(data.username);
+        case "private_invite":
+            console.log(data)
+            const tetatet_room_response = await fetch(`http://127.0.0.1:8000/api/v1/room/${data.id}?type=tetatet`, requestGetOption());
+            const tetatet_room_json = await tetatet_room_response.json();
+            const id = tetatet_room_json.id;
+            const label = tetatet_room_json.label;
+            const author = tetatet_room_json.author;
+            const room_url = tetatet_room_json.room_url;
+            const profileInfo = await getProfileInfo()
+            createRoomNode(id, label, author, room_url, profileInfo, l_tetatet_rooms, "room_options_blinked")
+            if (data.subtype === "source_user") {
+                chat_log.value += `INFO: Перейдите в тет-а-тет чат с пользователем ${data.target_user} `
+            } else if (data.subtype === "target_user") {
+                chat_log.value += `INFO: Личное сообщение от ${data.source_user}. Перейдите в тет-а-тет чат для общения`
+            }
             break;
             }
     };
@@ -178,11 +169,14 @@ document.querySelector('#chat-message-clear').onclick = function (e) {
 
 
 // Closing WebSocket
-function chatCloseWebSocket(btnNode) {
+function chatCloseWebSocket() {
     if (chatSocket) {
         chatSocket.close();
         chatSocket = null;
     }
+    document.querySelector('#title_room').innerHTML = 'Войдите в чат';
+    document.querySelector('#chat-log').value = '';
+    document.querySelector('#membersSelector').innerHTML = '';
 }
 
 async function createRoom() {
@@ -191,7 +185,20 @@ async function createRoom() {
         const new_room_body = JSON.stringify({name: new_name})
         const response = await fetch('http://127.0.0.1:8000/api/v1/room/', requestUpdateOption('post', new_room_body))
         if (response.ok) {
-            await renderListRoom()
+            await renderListRoom();
+            const room_data = await response.json();
+            document.querySelector(`#btn-ent-${room_data.id}`).click();  // Вход после создания комнаты
+        }
+    }
+}
+
+async function editNameRoom(id) {
+    const new_name = prompt('Введите новое имя чата:');
+    if (new_name) {
+        const new_name_body = JSON.stringify({name: new_name})
+        const response = await fetch(`http://127.0.0.1:8000/api/v1/room/${id}/`, requestUpdateOption('put', new_name_body))
+        if (response.ok) {
+            await renderListRoom();
         }
     }
 }
@@ -226,6 +233,54 @@ function memberOptionAdd (member) {
         document.querySelector('#membersSelector').appendChild(opt_member);
 }
 
+function createRoomNode(id, label, author,  room_url, profileInfo, list_node, class_animate) {
+    const elemRoom = document.createElement('li');
+            elemRoom.innerHTML = `
+        <span class=${class_animate}>
+            <a id="label_room-${id}" style="font-size: 21px">${label}
+            <i id="icon_edit-${id}"class="bi-pencil-square hidden" style="font-size: medium;"></i>
+            <i id="icon_remove-${id}"class="bi bi-trash3 hidden" style="font-size: medium;"></i>
+            </a>
+            <div class="d_btns_room">
+                <button id="btn-ent-${id}" class="btn_enter btn-sm btn-success">Войти</button>
+                <button id="btn-ex-${id}" class="btn_exit btn-sm btn-outline-warning hidden">Выйти</button>
+            </div>
+        </span>
+    `
+            list_node.appendChild(elemRoom);
+            const icon_edit = document.querySelector(`#icon_edit-${id}`);
+            const icon_remove = document.querySelector(`#icon_remove-${id}`);
+            const btn_enter = document.querySelector(`#btn-ent-${id}`);
+            const btn_exit = document.querySelector(`#btn-ex-${id}`);
+            if (author.includes(profileInfo.username) && label !== 'Personal') {
+                icon_remove.classList.remove('hidden')
+                icon_edit.classList.remove('hidden')
+            }
+
+            icon_edit.addEventListener('click', async () => {
+                const roomId = icon_edit.id.match(/^icon_edit-(.*)$/)[1]  // Get room name from button id
+                await editNameRoom(roomId)
+            })
+
+            icon_remove.addEventListener('click', async () => {
+                chatCloseWebSocket();
+                await removeRoomRenderList(room_url);
+            })
+
+            btn_enter.addEventListener('click', async () => {
+                chatOpenWebSocket(btn_enter);
+                document.querySelector('#title_room').innerHTML = `Комната "${label}"`;
+                btn_enter.classList.add('hidden');
+                btn_exit.classList.remove('hidden');
+            })
+
+            btn_exit.addEventListener('click', () => {
+                chatCloseWebSocket(btn_exit);
+                btn_exit.classList.add('hidden');
+                btn_enter.classList.remove('hidden');
+            })
+}
+
 function memberOptionRemove (member) {
         const opt_member = document.querySelector(`option[id=${member}]`)
         if (!opt_member) return;
@@ -236,3 +291,4 @@ function formatedDateTime (datetime) {
     let data_time = new Date (datetime);
     return `${('0' + data_time.getDate()).slice(-2)}.${('0' + (data_time.getMonth() + 1)).slice(-2)} ${('0' + data_time.getHours()).slice(-2)}:${('0' + data_time.getMinutes()).slice(-2)}`
 }
+
