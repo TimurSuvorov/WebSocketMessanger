@@ -23,9 +23,12 @@ from rest_framework import routers
 from webgroupchats.views import *
 
 router = routers.DefaultRouter()
+print(router)
 
 router.register(r'room', RoomViewSet)
 router.register(r'userprofile', ProfileViewSet)
+print(router)
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),

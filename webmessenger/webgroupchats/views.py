@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import F
 from django.shortcuts import redirect
 from djoser import permissions
 from rest_framework import generics, status, viewsets, mixins
@@ -79,6 +80,12 @@ class RoomViewSet(viewsets.ModelViewSet):
             response_json = {"detail": "Not found."}
             status_ = status.HTTP_404_NOT_FOUND
         return Response(response_json, status_)
+
+    @action(methods=['get'], detail=False)
+    def allmembers(self, request):
+        allmembers = \
+            set(UserRoom.objects.annotate(username=F('user__username')).values_list('username', flat=True))
+        return Response({"allmembers": allmembers}, status.HTTP_200_OK)
 
     def get_permissions(self):
         if self.action == 'list' or self.action == 'create':

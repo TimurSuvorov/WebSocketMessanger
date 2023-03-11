@@ -8,6 +8,7 @@ const l_tetatet_rooms = document.querySelector('.l_tetatet_rooms');
 const btn_create_room = document.querySelector('.btn_create_room');
 const href_logout = document.querySelector('.a_logout');
 const membersSelector = document.querySelector('#membersSelector');
+const allmembersSelector = document.querySelector('#allmembersSelector');
 const chat_message_input = document.querySelector('#chat-message-input');
 
 
@@ -24,7 +25,19 @@ btn_create_room.addEventListener('click', () => createRoom());
 membersSelector.addEventListener('click', (e) => {
     chat_message_input.value = `/only_to ${e.target.value} `
 });
+allmembersSelector.addEventListener('click', (e) => {
+    if (chatSocket) {
+        chat_message_input.value = `/only_to ${e.target.value} `
+    }
+});
 
+
+setInterval(async function () {
+    let allmembers_json = await getAllMembersOnline();
+    allmembers_json.allmembers.forEach((member) => {
+        memberOptionAdd('allmembersSelector', member)
+    })
+}, 5000)
 
 
 async function renderListRoom () {
@@ -57,7 +70,7 @@ async function renderListRoom () {
 
 
 // Opening WebSocket
-function chatOpenWebSocket(btnNode) {
+async function chatOpenWebSocket(btnNode) {
     if (chatSocket) {
         let id = chatSocket.url.match(/.*rooms\/(.*)\//)[1]
         document.querySelector(`#btn-ex-${id}`).classList.add('hidden')
@@ -90,23 +103,21 @@ function chatOpenWebSocket(btnNode) {
             chat_log.value += '^^^^^^^^^^ История сообщений ^^^^^^^^^^' + '\n';
             chat_log.scrollTop = document.querySelector('#chat-log').scrollHeight;
             }
-        console.log('Socker has been opened')
     }
 
     chatSocket.onmessage = async function (e) {
     const data = JSON.parse(e.data);
     let chat_log = document.querySelector('#chat-log');
-        console.log(data.type)
     switch (data.type) {
         case 'only_for_user': // личное сообщение из группы
             document.querySelector('#membersSelector').innerHTML = '';
-            data.members.forEach((member) => memberOptionAdd(member))
+            data.members.forEach((member) => memberOptionAdd('membersSelector', member))
             break;
         case "chat_deleted_message":
             chat_log.value += data.message + "\n"
             break;
         case "user_join_members":
-            memberOptionAdd(data.username);
+            memberOptionAdd('membersSelector', data.username);
             break;
         case "user_leave_members":
             memberOptionRemove(data.username);
@@ -225,19 +236,19 @@ async function getMessages(room_url) {
     }
 }
 
-function memberOptionAdd (member) {
-        if (document.querySelector(`option[id=${member}]`)) return;
+function memberOptionAdd (selector, member) {
+        if (document.querySelector(`#${selector} option[id=${member}]`)) return;
         const opt_member = document.createElement('option');
         opt_member.id = member;
         opt_member.innerHTML = member;
-        document.querySelector('#membersSelector').appendChild(opt_member);
+        document.querySelector(`#${selector}`).appendChild(opt_member);
 }
 
 function createRoomNode(id, label, author,  room_url, profileInfo, list_node, class_animate) {
     const elemRoom = document.createElement('li');
             elemRoom.innerHTML = `
         <span class=${class_animate}>
-            <a id="label_room-${id}" style="font-size: 21px">${label}
+            <a id="label_room-${id}" style="font-size: 17px">${label}
             <i id="icon_edit-${id}"class="bi-pencil-square hidden" style="font-size: medium;"></i>
             <i id="icon_remove-${id}"class="bi bi-trash3 hidden" style="font-size: medium;"></i>
             </a>
@@ -290,5 +301,12 @@ function memberOptionRemove (member) {
 function formatedDateTime (datetime) {
     let data_time = new Date (datetime);
     return `${('0' + data_time.getDate()).slice(-2)}.${('0' + (data_time.getMonth() + 1)).slice(-2)} ${('0' + data_time.getHours()).slice(-2)}:${('0' + data_time.getMinutes()).slice(-2)}`
+}
+
+async function getAllMembersOnline () {
+    const response = await fetch('http://127.0.0.1:8000/api/v1/room/allmembers', requestGetOption())
+    if (response.ok) {
+        return await response.json();
+    }
 }
 

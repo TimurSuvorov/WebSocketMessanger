@@ -160,7 +160,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message_splited = message.split(' ', 2)
             target_user = message_splited[1]
             target_message = message_splited[2]
-            if self.user.username == target_user:  # Если пишет самому себе, то ничего не происходит
+            if self.user.username == target_user and len(target_message) > 0:  # Если пишет самому себе или пустое сообщение, то ничего не происходит
                 return
             # Формируем имя тет-а-тет комнаты tetatet_pk1_pk2, где pk1 и pk2 в порядке возрастания
             target_user_obj = await self.get_user_by_username(target_user)

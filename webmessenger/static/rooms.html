@@ -8,56 +8,149 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 
 <style>
-    #chat-log {
-        height: 400px;
-        background-color: #eceaea;
-        resize: none;
-        width: 100%;
-        min-width: 524px;
-        margin: 10px;
-    }
+.wrapper {
+  display: flex;
+  flex-flow: row wrap;
+  font-weight: bold;
+  text-align: center;
+}
 
-    #membersSelector {
-        background-color: #eceaea;
-        height: 250px;
-        margin: 10px;
-    }
+.wrapper > * {
+  padding: 10px;
+  flex: 1 100%;
+}
 
-    #chat-message-input {
-        background-color: #eceaea;
-        margin: 10px;
-    }
+.header {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    background: #050000;
+}
 
-    #chat-message-submit, chat-message-clear {
-        margin: 10px;
-    }
+.header >* {
+    margin: 0;
+}
 
-    .col {
-        margin: 20px;
-    }
+.header  h1 {
+    font-family: "Roboto", "Lucida Grande", Verdana, Arial, sans-serif;
+    color: white;
+}
 
+.header .navigation a {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    float: left;
+    padding: 0 20px;
+    text-decoration: none;
+}
+
+.header .navigation a li {
+    vertical-align: middle;
+    display: table-cell;
+    font-size: 20px;
+    color: #f5f9fa;
+    list-style-type: none;
+}
+
+.navigation a li:hover {
+    color: #95b2f1;
+    text-decoration-color: blue;
+}
+
+.main_rooms {
+    text-align: left;
+    background: #f5f9fa;
+    height: 100vh;
+}
+
+.aside-1 {
+  min-width: 250px;
+  text-align: left;
+  height: 100vh;
+}
+
+.aside-2 {
+    display: flow-root;
+    width: 100px;
+    text-align: center;
+}
+
+@media all {
+  .aside { flex: 1 0 0; }
+}
+
+@media all and (min-width: 400px) {
+  .main_rooms    { flex: 3 0px; }
+  .aside-1 { order: 1; }
+  .main_rooms    { order: 2; }
+  .aside-2 { order: 3; }
+  .aside-3 { order: 4; }
+  .aside-4 { order: 5; }
+}
+
+.input-group {
+    padding: 10px;
+}
+
+.hidden {
+  display: none;
+}
+
+.chat_type {
+    align-items: center;
+}
+
+.l_private_rooms, .l_common_rooms, .l_tetatet_rooms {
+    padding: 0;
+    list-style-type: none;
+}
+
+
+.btn-group-sm>.btn, .btn-sm {
+    padding: .05rem 0.25rem;
+    font-size: .875rem;
+    border-radius: .2rem;
+}
 
 </style>
+
 <body>
-<div class="header">
-    <div class="inner-header">
+<div class="wrapper">
+    <header class="header">
         <h1>Мессенджер</h1>
         <ul class="navigation">
-                <a href="#" title="Выйти" class="a_logout"><li>Выйти</li></a>
-                <a href="/profile" title="Профиль" class="a_profile"><li>Профиль</li></a>
-                <a href="#" title="Список чат-комнат" class="a_rooms"><li style="color: dodgerblue">Список чат-комнат</li></a>
+            <a href="#" title="Выйти" class="a_logout"><li>Выйти</li></a>
+            <a href="/profile" title="Профиль" class="a_profile"><li>Профиль</li></a>
+            <a href="#" title="Список чат-комнат" class="a_rooms"><li style="color: dodgerblue">Список чат-комнат</li></a>
         </ul>
-    </div>
-</div>
-<main class="main_rooms">
+    </header>
+    <article class="main_rooms">
+                    <div class="mb-2">
+                        <h4 id="title_room" for="chat-log">Войдите в чат</h4>
+                        <textarea class="form-control"
+                                  rows="15"
+                                  id="chat-log"
+                                  placeholder="Здесь пока нет ничего. Исправьте это :)"
+                                  style="overflow:auto;"
+                                  readonly></textarea><br>
+                    </div>
+                    <div class="input-group">
+                        <input class="form-control" id="chat-message-input" type="text" placeholder="Введите сообщение"><br>
+                        <div class="input-group">
+                            <input id="chat-message-submit" type="button" class="btn btn-primary" value="Отправить">
+                            <input id="chat-message-clear" type="button" class="btn-sm btn-default" value="Очистить">
+                        </div>
+                    </div>
+    </article>
+    <aside class="aside aside-1">
         <nav class="n_list_rooms">
             <p><button class="btn_create_room btn-sm btn-danger">Создать чат</button></p>
             <hr>
-            <h4>Личный чат</h4>
+            <h4 class="chat_type">Личный кабинет</h4>
             <ul class="l_private_rooms">
                 <!-- Личная комната -->
             </ul>
@@ -72,33 +165,16 @@
                 <!-- Списки тет-а-тет комнат -->
             </ul>
         </nav>
-        <div class="col">
-            <div class="col-12 col-md-8">
-                    <div class="mb-2">
-                        <h3 id="title_room" for="chat-log">Войдите в чат</h3>
-                        <textarea class="form-control"
-                                  id="chat-log"
-                                  placeholder="Здесь пока нет ничего. Исправьте это :)"
-                                  style="overflow:auto;"
-                                  readonly></textarea><br>
-                    </div>
-                    <div class="input-group">
-                        <input class="form-control" id="chat-message-input" type="text" placeholder="Введите сообщение"><br>
-                        <div class="input-group">
-                            <input id="chat-message-submit" type="button" class="btn btn-primary" value="Отправить">
-                            <input id="chat-message-clear" type="button" class="btn btn-default" value="Очистить">
-                        </div>
-                    </div>
-            </div>
-            <div class="col-15 col-md-2">
-                <label for="membersSelector">Пользователи онлайн</label>
-                <select class="form-control" id="membersSelector" size="5">
-
-                </select>
-            </div>
-        </div>
-</main>
+    </aside>
+    <aside class="aside aside-2">
+    <aside class="aside aside-3">
+            <label for="membersSelector">Пользователи онлайн в чате:</label>
+            <select class="form-control" id="membersSelector" size="7"></select>
+    </aside>
+    <aside class="aside aside-4">
+            <label for="allmembersSelector">Пользователи онлайн:</label>
+            <select class="form-control" id="allmembersSelector" size="7"></select>
+    </aside>
+    </aside>
 <script type="module" src="{% static 'js/rooms.js' %}"></script>
-
-</body>
-</html>
+</div>

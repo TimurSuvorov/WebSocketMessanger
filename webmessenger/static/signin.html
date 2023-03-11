@@ -10,23 +10,113 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
+
+<style>
+.wrapper {
+  display: flex;
+  flex-flow: row wrap;
+  font-weight: bold;
+  text-align: center;
+}
+
+.wrapper > * {
+  padding: 10px;
+  flex: 1 100%;
+}
+
+.header {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    background: #050000;
+}
+
+.header >* {
+    margin: 0;
+}
+
+.header  h1 {
+    font-family: "Roboto", "Lucida Grande", Verdana, Arial, sans-serif;
+    color: white;
+}
+
+.header .navigation a {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    float: left;
+    padding: 0 20px;
+    text-decoration: none;
+}
+
+.header .navigation a li {
+    vertical-align: middle;
+    display: table-cell;
+    font-size: 20px;
+    color: #f5f9fa;
+}
+
+.navigation a li:hover {
+    color: #95b2f1;
+    text-decoration-color: blue;
+}
+
+.main_rooms {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #f5f9fa;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+figure {
+    border: thin #fc6565 ridge;
+    border-radius: 5px;
+    display: flex;
+    padding: 5px;
+    margin-bottom: 10px;
+    width: fit-content;
+    flex-direction: column;
+    align-items: stretch;
+    border: th;
+}
+
+
+</style>
+
 <body>
-<div class="header">
-    <div class="inner-header">
+<div class="wrapper">
+    <header class="header">
         <h1>Мессенджер</h1>
         <ul class="navigation">
                 <a href="/signup" title="Регистрация" class="a_signup"><li>Регистрация</li></a>
                 <a href="#" title="Вход" class="a_signin"><li style="color: dodgerblue">Вход</li></a>
         </ul>
-    </div>
+    </header>
+    <article class="main_rooms">
+        <h1>Вход в систему</h1>
+        <figure>
+            <label for="id_username">Username</label>
+                <p><input type="text" id="id_username" name="username" required></p>
+            <label for="id_password">Password</label>
+                <p><input type="password" id="id_password" name="password" required></p>
+            <button class="btn-signin btn-success">Войти</button>
+        </figure>
+    </article>
 </div>
-<h1>Вход в систему</h1>
 <main class="main">
+    <figure>
         <label for="id_username">Username</label>
             <p><input type="text" id="id_username" name="username" required></p>
         <label for="id_password">Password</label>
             <p><input type="password" id="id_password" name="password" required></p>
         <button class="btn-signin">SignIn</button>
+    </figure>
 <script type="module" src="{% static 'js/signin_proc.js' %}"></script>
 </main>
 </body>

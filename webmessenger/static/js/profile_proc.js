@@ -12,6 +12,7 @@ const elem_photo = document.querySelector('.img_photo');
 const block_photo = document.querySelector('.block_photo');
 const input_upload = document.querySelector('.input_upload');
 const btn_upload = document.querySelector('.btn_upload')
+const btn_submit = document.querySelector('.btn-submit')
 const href_logout = document.querySelector('.a_logout')
 
 if (!getToken()) {
@@ -38,10 +39,10 @@ btn_upload.addEventListener('click', async () => {
         if (response.ok) {
            userProfileInfo = await getProfileInfo();
            renderProfile(userProfileInfo);
-           insertToEndElement ('Данные успешно обновлены. Возрадуйтесь!', block_photo)
+           insertToEndElement ('Данные успешно обновлены. Возрадуйтесь!', btn_submit)
         }
         } else {
-        insertToEndElement ('Изменения отсутствуют', block_photo)
+        insertToEndElement ('Изменения отсутствуют', btn_submit)
     }
     })
 
