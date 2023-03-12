@@ -1,11 +1,81 @@
 import datetime
 import json
-from pprint import pprint
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 from webgroupchats.models import Room, Message, User
+
+
+class BackgroundChatConsumer(AsyncWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self.background_room = None
+        self.user = None
+
+    async def connect(self):
+
+        # Определить свойства
+        self.background_room = "background_room"
+        self.user = self.scope['user']
+
+        if not self.user.is_authenticated:
+            return
+
+        # Добавление канала в общую группу
+        await self.channel_layer.group_add(
+            self.background_room,
+            self.channel_name
+        )
+
+        await self.accept()
+
+        # Отправка сообщения-оповещения "пользователь онлайн" 
+        await self.channel_layer.group_send(
+            self.background_room, {
+                "type": "user_online",
+                "username": self.scope['user'].username,
+            }
+        )
+    
+    async def disconnect(self, code):
+        
+        if not self.user.is_authenticated:
+            return
+        
+        await self.channel_layer.group_send(
+            self.background_room, {
+                "type": "user_offline",
+                "username": self.scope['user'].username,
+            }
+        )
+
+        # Удаление канала из личной группы
+        await self.channel_layer.group_discard(
+            self.background_room,
+            self.channel_name
+        )
+
+    async def receive(self, text_data=None, bytes_data=None):
+        
+        if not self.user.is_authenticated:
+            return
+        
+        text_data_json: dict = json.loads(text_data)
+        echo_online_message = text_data_json.get('echo_online', None)
+
+        await self.channel_layer.group_send(
+            self.background_room, {
+                "type": "user_online",
+                "username": self.scope['user'].username,
+            }
+        )
+
+    async def user_online(self, event):
+        await self.send(text_data=json.dumps(event))
+
+    async def user_offline(self, event):
+        await self.send(text_data=json.dumps(event))
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -140,10 +210,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
 
     async def receive(self, text_data=None, bytes_data=None):
-
+        
+        if not self.user.is_authenticated:
+            return
+        
         text_data_json: dict = json.loads(text_data)
 
-        message: str = text_data_json.get('message', None)
+        message = text_data_json.get('message', None)
 
         # Проверка на случай, если комната уже удалена
         if not (await self.get_room()):
@@ -155,7 +228,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
             return
 
-        # Если приходит сообщение личного характера, начинающееся на /name, то создается тет-а-тет группа
+        # Если приходит сообщение личного характера, начинающееся на /only_to, то создается тет-а-тет группа
         if message.startswith('/only_to'):
             message_splited = message.split(' ', 2)
             target_user = message_splited[1]
@@ -206,8 +279,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             await self.save_messages(message, self.room)
 
-        if not self.user.is_authenticated:
-            return
+
 
     # Methods for message's types
 

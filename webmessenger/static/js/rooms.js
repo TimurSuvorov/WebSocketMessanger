@@ -1,6 +1,7 @@
 import {getProfileInfo, getToken, logOut, requestGetOption, requestUpdateOption} from './utils.js'
 
 let chatSocket;
+let background_chatSocket;
 
 const l_private_rooms = document.querySelector('.l_private_rooms');
 const l_common_rooms = document.querySelector('.l_common_rooms');
@@ -19,6 +20,7 @@ if (!getToken()) {
 btn_create_room.focus();
 
 await renderListRoom();
+await backgroundChatOpenWebSocket();
 
 href_logout.addEventListener('click', () => logOut());
 btn_create_room.addEventListener('click', () => createRoom());
@@ -30,15 +32,6 @@ allmembersSelector.addEventListener('click', (e) => {
         chat_message_input.value = `/only_to ${e.target.value} `
     }
 });
-
-
-setInterval(async function () {
-    let allmembers_json = await getAllMembersOnline();
-    allmembers_json.allmembers.forEach((member) => {
-        memberOptionAdd('allmembersSelector', member)
-    })
-}, 5000)
-
 
 async function renderListRoom () {
     const common_rooms_response = await fetch('http://127.0.0.1:8000/api/v1/room/?type=common', requestGetOption());
@@ -68,6 +61,67 @@ async function renderListRoom () {
     });
 }
 
+// Opening background WebSocket for handling online users
+async function backgroundChatOpenWebSocket() {
+
+    background_chatSocket = new WebSocket(
+    'ws://'
+    + window.location.host
+    + '/ws/background'
+    + '/?token='
+    + getToken()
+    );
+    background_chatSocket.onopen = async function () {
+        let interval_id = setInterval(() => {
+            background_chatSocket.send(JSON.stringify({
+            'echo_online': 'iamhere'
+                })
+            )
+        }, 2000)
+    }
+
+    background_chatSocket.onmessage = async function (e) {
+        const background_data = JSON.parse(e.data);
+        switch (background_data.type) {
+            case 'user_online':
+                memberOptionAdd('allmembersSelector', background_data.username);
+                break;
+            case 'user_offline':
+                memberOptionRemove('allmembersSelector', background_data.username);
+                break;
+            case "background_private_invite":
+                const tetatet_room_response = await fetch(`http://127.0.0.1:8000/api/v1/room/${background_data.id}?type=tetatet`, requestGetOption());
+                const tetatet_room_json = await tetatet_room_response.json();
+                const id = tetatet_room_json.id;
+                const label = tetatet_room_json.label;
+                const author = tetatet_room_json.author;
+                const room_url = tetatet_room_json.room_url;
+                const profileInfo = await getProfileInfo()
+                createRoomNode(id, label, author, room_url, profileInfo, l_tetatet_rooms, "room_options_blinked")
+                if (background_data.subtype === "source_user") {
+                    chat_log.value += `INFO: Перейдите в тет-а-тет чат с пользователем ${background_data.target_user} `
+                } else if (data.subtype === "target_user") {
+                    chat_log.value += `INFO: Личное сообщение от ${background_data.source_user}. Перейдите в тет-а-тет чат для общения`
+                }
+            break;
+        }
+    }
+
+    background_chatSocket.onerror = function () {
+        background_chatSocket.close();
+    }
+
+    background_chatSocket.onclose = async function (e) {
+        if (e.wasClean) {
+            console.log('Chat socket closed clearly')
+        } else {
+            console.error('Chat socket closed unexpectedly')
+        }
+        setTimeout(function() {
+            backgroundChatOpenWebSocket();
+            }, 1000);
+    }
+}
 
 // Opening WebSocket
 async function chatOpenWebSocket(btnNode) {
@@ -120,7 +174,7 @@ async function chatOpenWebSocket(btnNode) {
             memberOptionAdd('membersSelector', data.username);
             break;
         case "user_leave_members":
-            memberOptionRemove(data.username);
+            memberOptionRemove('membersSelector', data.username);
             break;
         case "chat_message":
             const data_time_format = formatedDateTime(data.time);
@@ -128,7 +182,6 @@ async function chatOpenWebSocket(btnNode) {
             chat_log.scrollTop = chat_log.scrollHeight;
             break;
         case "private_invite":
-            console.log(data)
             const tetatet_room_response = await fetch(`http://127.0.0.1:8000/api/v1/room/${data.id}?type=tetatet`, requestGetOption());
             const tetatet_room_json = await tetatet_room_response.json();
             const id = tetatet_room_json.id;
@@ -164,8 +217,14 @@ async function chatOpenWebSocket(btnNode) {
     document.querySelector('#chat-message-submit').onclick = function(e) {
         const messageInput = document.querySelector('#chat-message-input');
         const message = messageInput.value;
-        if (message.length) {
+        if (!message.length) return;
+        if (chatSocket) {
             chatSocket.send(JSON.stringify({
+            'message': message
+                })
+            )
+        } else {
+            background_chatSocket.send(JSON.stringify({
             'message': message
                 })
             )
@@ -244,6 +303,12 @@ function memberOptionAdd (selector, member) {
         document.querySelector(`#${selector}`).appendChild(opt_member);
 }
 
+function memberOptionRemove (selector, member) {
+        const opt_member = document.querySelector(`#${selector} option[id=${member}]`)
+        if (!opt_member) return;
+        document.querySelector(`#${selector}`).removeChild(opt_member)
+}
+
 function createRoomNode(id, label, author,  room_url, profileInfo, list_node, class_animate) {
     const elemRoom = document.createElement('li');
             elemRoom.innerHTML = `
@@ -292,11 +357,6 @@ function createRoomNode(id, label, author,  room_url, profileInfo, list_node, cl
             })
 }
 
-function memberOptionRemove (member) {
-        const opt_member = document.querySelector(`option[id=${member}]`)
-        if (!opt_member) return;
-        document.querySelector('#membersSelector').removeChild(opt_member)
-}
 
 function formatedDateTime (datetime) {
     let data_time = new Date (datetime);
