@@ -11,7 +11,9 @@ const href_logout = document.querySelector('.a_logout');
 const membersSelector = document.querySelector('#membersSelector');
 const allmembersSelector = document.querySelector('#allmembersSelector');
 const chat_message_input = document.querySelector('#chat-message-input');
-
+const chat_message_submit = document.querySelector('#chat-message-submit')
+const chat_message_clear = document.querySelector('#chat-message-clear')
+const chat_log = document.querySelector('#chat-log');
 
 if (!getToken()) {
     window.location.replace('/signin')
@@ -22,16 +24,45 @@ btn_create_room.focus();
 await renderListRoom();
 await backgroundChatOpenWebSocket();
 
+
 href_logout.addEventListener('click', () => logOut());
 btn_create_room.addEventListener('click', () => createRoom());
 membersSelector.addEventListener('click', (e) => {
     chat_message_input.value = `/only_to ${e.target.value} `
-});
+    });
 allmembersSelector.addEventListener('click', (e) => {
-    if (chatSocket) {
-        chat_message_input.value = `/only_to ${e.target.value} `
+    chat_message_input.value = `/only_to ${e.target.value} `
+    });
+
+
+chat_message_clear.onclick = function () {
+    chat_log.value = '';
+}
+
+
+chat_message_input.focus();
+    chat_message_input.onkeyup = function(e) {
+        if (e.keyCode === 13) {  // enter, return
+            chat_message_submit.click();
+        }
+    };
+
+chat_message_submit.onclick = function(e) {
+    const message = chat_message_input.value;
+    if (!message.length) return;
+    if (message.startsWith('/only_to')) {
+        background_chatSocket.send(JSON.stringify({
+        'message': message
+            })
+        )
+    } else if (chatSocket) {
+        chatSocket.send(JSON.stringify({
+        'message': message
+            })
+        )
     }
-});
+    chat_message_input.value = '';
+};
 
 async function renderListRoom () {
     const common_rooms_response = await fetch('http://127.0.0.1:8000/api/v1/room/?type=common', requestGetOption());
@@ -56,14 +87,13 @@ async function renderListRoom () {
             let author = room_json.author;
             let room_url = room_json.room_url;
             let label = room_json.label;
-            createRoomNode(id, label, author, room_url, profileInfo, list_node, "room_options_fast")
+            createRoomNode(id, label, author, room_url, profileInfo, list_node, "")
         });
     });
 }
 
 // Opening background WebSocket for handling online users
 async function backgroundChatOpenWebSocket() {
-
     background_chatSocket = new WebSocket(
     'ws://'
     + window.location.host
@@ -99,9 +129,9 @@ async function backgroundChatOpenWebSocket() {
                 const profileInfo = await getProfileInfo()
                 createRoomNode(id, label, author, room_url, profileInfo, l_tetatet_rooms, "room_options_blinked")
                 if (background_data.subtype === "source_user") {
-                    chat_log.value += `INFO: Перейдите в тет-а-тет чат с пользователем ${background_data.target_user} `
-                } else if (data.subtype === "target_user") {
-                    chat_log.value += `INFO: Личное сообщение от ${background_data.source_user}. Перейдите в тет-а-тет чат для общения`
+                    chat_log.value += `INFO: Перейдите в тет-а-тет чат с пользователем ${background_data.target_user} \n`
+                } else if (background_data.subtype === "target_user") {
+                    chat_log.value += `INFO: Личное сообщение от ${background_data.source_user}. Перейдите в тет-а-тет чат для общения \n`
                 }
             break;
         }
@@ -125,6 +155,7 @@ async function backgroundChatOpenWebSocket() {
 
 // Opening WebSocket
 async function chatOpenWebSocket(btnNode) {
+    const profileInfo = await getProfileInfo();
     if (chatSocket) {
         let id = chatSocket.url.match(/.*rooms\/(.*)\//)[1]
         document.querySelector(`#btn-ex-${id}`).classList.add('hidden')
@@ -181,21 +212,6 @@ async function chatOpenWebSocket(btnNode) {
             chat_log.value += (`${data_time_format}  ${data.username}:\n  ${data.message}` + '\n');
             chat_log.scrollTop = chat_log.scrollHeight;
             break;
-        case "private_invite":
-            const tetatet_room_response = await fetch(`http://127.0.0.1:8000/api/v1/room/${data.id}?type=tetatet`, requestGetOption());
-            const tetatet_room_json = await tetatet_room_response.json();
-            const id = tetatet_room_json.id;
-            const label = tetatet_room_json.label;
-            const author = tetatet_room_json.author;
-            const room_url = tetatet_room_json.room_url;
-            const profileInfo = await getProfileInfo()
-            createRoomNode(id, label, author, room_url, profileInfo, l_tetatet_rooms, "room_options_blinked")
-            if (data.subtype === "source_user") {
-                chat_log.value += `INFO: Перейдите в тет-а-тет чат с пользователем ${data.target_user} `
-            } else if (data.subtype === "target_user") {
-                chat_log.value += `INFO: Личное сообщение от ${data.source_user}. Перейдите в тет-а-тет чат для общения`
-            }
-            break;
             }
     };
 
@@ -206,40 +222,10 @@ async function chatOpenWebSocket(btnNode) {
             console.error('Chat socket closed unexpectedly')
         }
     };
-
-    document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#chat-message-submit').click();
-            }
-        };
-
-    document.querySelector('#chat-message-submit').onclick = function(e) {
-        const messageInput = document.querySelector('#chat-message-input');
-        const message = messageInput.value;
-        if (!message.length) return;
-        if (chatSocket) {
-            chatSocket.send(JSON.stringify({
-            'message': message
-                })
-            )
-        } else {
-            background_chatSocket.send(JSON.stringify({
-            'message': message
-                })
-            )
-        }
-        messageInput.value = '';
-    };
 }
-
-document.querySelector('#chat-message-clear').onclick = function (e) {
-    document.querySelector('#chat-log').value = '';
-}
-
 
 // Closing WebSocket
-function chatCloseWebSocket() {
+function chatCloseWebSocket(command) {
     if (chatSocket) {
         chatSocket.close();
         chatSocket = null;
@@ -310,6 +296,7 @@ function memberOptionRemove (selector, member) {
 }
 
 function createRoomNode(id, label, author,  room_url, profileInfo, list_node, class_animate) {
+    if (document.querySelector(`#label_room-${id}`)) return;
     const elemRoom = document.createElement('li');
             elemRoom.innerHTML = `
         <span class=${class_animate}>
@@ -339,7 +326,7 @@ function createRoomNode(id, label, author,  room_url, profileInfo, list_node, cl
             })
 
             icon_remove.addEventListener('click', async () => {
-                chatCloseWebSocket();
+                chatCloseWebSocket('chat_remove');
                 await removeRoomRenderList(room_url);
             })
 
@@ -351,7 +338,7 @@ function createRoomNode(id, label, author,  room_url, profileInfo, list_node, cl
             })
 
             btn_exit.addEventListener('click', () => {
-                chatCloseWebSocket(btn_exit);
+                chatCloseWebSocket();
                 btn_exit.classList.add('hidden');
                 btn_enter.classList.remove('hidden');
             })

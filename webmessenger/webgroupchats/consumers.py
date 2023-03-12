@@ -8,16 +8,46 @@ from webgroupchats.models import Room, Message, User
 
 
 class BackgroundChatConsumer(AsyncWebsocketConsumer):
+
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
         self.background_room = None
         self.user = None
+        self.private_group = None
+
+    @database_sync_to_async
+    def get_user_by_username(self, username):
+        return User.objects.get(username=username)
+
+    @database_sync_to_async
+    def create_tetatet_room(self, room, author1, author2):
+        tetatet_group_obj, created = Room.objects.get_or_create(name=room, type="tetatet")
+        tetatet_group_obj.author.add(author1)
+        tetatet_group_obj.author.add(author2)
+        tetatet_group_obj.label = f"{author1.username}<->{author2.username}"
+        tetatet_group_obj.save()
+        return tetatet_group_obj
+
+    @database_sync_to_async
+    def save_messages(self, message, room):
+        user = self.user
+        Message.objects.create(content=message,
+                               author=user,
+                               room=room
+                               )
+
+    @database_sync_to_async
+    def get_private_room(self):
+        room_qs = Room.objects.filter(name=self.private_group)
+        if room_qs.exists():
+            return room_qs[0]
 
     async def connect(self):
 
         # Определить свойства
         self.background_room = "background_room"
         self.user = self.scope['user']
+        self.private_group = f"private_{self.user.id}"  # Создаем имя личной группы
 
         if not self.user.is_authenticated:
             return
@@ -25,6 +55,12 @@ class BackgroundChatConsumer(AsyncWebsocketConsumer):
         # Добавление канала в общую группу
         await self.channel_layer.group_add(
             self.background_room,
+            self.channel_name
+        )
+
+        # Добавление канала в личную группу
+        await self.channel_layer.group_add(  # В channel_layer добавляем в группу соединение с именем channel_name
+            self.private_group,
             self.channel_name
         )
 
@@ -56,25 +92,78 @@ class BackgroundChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        # Удаление канала из личной группы
+        await self.channel_layer.group_discard(
+            self.private_group,
+            self.channel_name
+        )
+
     async def receive(self, text_data=None, bytes_data=None):
-        
+
         if not self.user.is_authenticated:
             return
-        
-        text_data_json: dict = json.loads(text_data)
-        echo_online_message = text_data_json.get('echo_online', None)
 
-        await self.channel_layer.group_send(
-            self.background_room, {
-                "type": "user_online",
+        text_data_json: dict = json.loads(text_data)
+
+        # Если приходит эхо-сообщение
+        if text_data_json.get('echo_online', None):
+            await self.channel_layer.group_send(
+                self.background_room, {
+                    "type": "user_online",
+                    "username": self.scope['user'].username,
+                }
+            )
+            return
+
+        message = text_data_json.get('message', None)
+
+        # Если приходит сообщение личного характера, начинающееся на /only_to, то создается тет-а-тет группа
+        if message.startswith('/only_to'):
+            message_splited = message.split(' ', 2)
+            target_user = message_splited[1]
+            target_message = message_splited[2]
+            if self.user.username == target_user or len(target_message) == 0:  # Если пишет самому себе или пустое сообщение, то ничего не происходит
+                return
+            # Формируем имя тет-а-тет комнаты tetatet_pk1_pk2, где pk1 и pk2 в порядке возрастания
+            target_user_obj = await self.get_user_by_username(target_user)
+            target_user_pk = target_user_obj.pk
+            tetatet_group_name = f"tetatet_{min(self.user.pk, target_user_pk)}_{max(self.user.pk, target_user_pk)}"
+
+            # Создаем тет-а-тет комнату в БД для записи сообщений
+            tetatet_room_obj = await self.create_tetatet_room(room=tetatet_group_name,
+                                                              author1=self.user,
+                                                              author2=target_user_obj)
+            # Отправляем приглашение в тет-а-тет комнату целевому пользователю
+            await self.channel_layer.group_send(
+                f"private_{target_user_pk}", {
+                    "type": "background_private_invite",
+                    "subtype": "target_user",
+                    "tetatet_group_name": tetatet_group_name,
+                    "id": tetatet_room_obj.id,
+                    "source_user": self.scope['user'].username,
+                    "message": target_message
+                }
+            )
+            # Отправляем оповещение об уведомлении инициатору
+            await self.send(json.dumps({
+                "type": "background_private_invite",
+                "subtype": "source_user",
+                "tetatet_group_name": tetatet_group_name,
+                "id": tetatet_room_obj.id,
                 "username": self.scope['user'].username,
-            }
-        )
+                "target_user": target_user,
+                "message": target_message
+            })
+            )
+            await self.save_messages(target_message, tetatet_room_obj)
 
     async def user_online(self, event):
         await self.send(text_data=json.dumps(event))
 
     async def user_offline(self, event):
+        await self.send(text_data=json.dumps(event))
+
+    async def background_private_invite(self, event):
         await self.send(text_data=json.dumps(event))
 
 
@@ -88,26 +177,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_label = None
         self.room_group_pk = None
         self.user = None
-        self.private_group = None
 
     @database_sync_to_async
     def get_room(self):
         room_qs = Room.objects.filter(pk=self.pk)
         if room_qs.exists():
             return room_qs[0]
-
-    @database_sync_to_async
-    def create_tetatet_room(self, room, author1, author2):
-        tetatet_group_obj, created = Room.objects.get_or_create(name=room, type="tetatet")
-        tetatet_group_obj.author.add(author1)
-        tetatet_group_obj.author.add(author2)
-        tetatet_group_obj.label = f"{author1.username}<->{author2.username}"
-        tetatet_group_obj.save()
-        return tetatet_group_obj
-
-    @database_sync_to_async
-    def get_user_by_username(self, username):
-        return User.objects.get(username=username)
 
     @database_sync_to_async
     def get_authors(self):
@@ -145,18 +220,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_label = self.room.label
         self.room_group_pk = f"chat_{self.pk}"  # Создаем имя группы на основе pk комнаты
         self.user = self.scope['user']
-        self.private_group = f"private_{self.user.username}"  # Создаем имя личной группы
 
         if self.user.is_authenticated:
             # Добавление канала в общую группу
             await self.channel_layer.group_add(  # В channel_layer добавляем в группу соединение с именем channel_name
                 self.room_group_pk,
-                self.channel_name
-            )
-
-            # Добавление канала в личную группу
-            await self.channel_layer.group_add(  # В channel_layer добавляем в группу соединение с именем channel_name
-                self.private_group,
                 self.channel_name
             )
 
@@ -203,12 +271,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
 
-            # Удаление канала из личной группы
-            await self.channel_layer.group_discard(
-                self.private_group,
-                self.channel_name
-            )
-
     async def receive(self, text_data=None, bytes_data=None):
         
         if not self.user.is_authenticated:
@@ -228,60 +290,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
             return
 
-        # Если приходит сообщение личного характера, начинающееся на /only_to, то создается тет-а-тет группа
-        if message.startswith('/only_to'):
-            message_splited = message.split(' ', 2)
-            target_user = message_splited[1]
-            target_message = message_splited[2]
-            if self.user.username == target_user and len(target_message) > 0:  # Если пишет самому себе или пустое сообщение, то ничего не происходит
-                return
-            # Формируем имя тет-а-тет комнаты tetatet_pk1_pk2, где pk1 и pk2 в порядке возрастания
-            target_user_obj = await self.get_user_by_username(target_user)
-            target_user_pk = target_user_obj.pk
-            tetatet_group_name = f"tetatet_{min(self.user.pk, target_user_pk)}_{max(self.user.pk, target_user_pk)}"
-
-            # Создаем тет-а-тет комнату в БД для записи сообщений
-            tetatet_room_obj = await self.create_tetatet_room(room=tetatet_group_name,
-                                                              author1=self.user,
-                                                              author2=target_user_obj)
-            # Отправляем приглашение в тет-а-тет комнату целевому пользователю
-            await self.channel_layer.group_send(
-                f"private_{target_user}", {
-                    "type": "private_invite",
-                    "subtype": "target_user",
-                    "tetatet_group_name": tetatet_group_name,
-                    "id": tetatet_room_obj.id,
-                    "source_user": self.scope['user'].username,
-                    "message": target_message
-                }
-            )
-            # Отправляем оповещение об уведомлении инициатору
-            await self.send(json.dumps({
-                "type": "private_invite",
-                "subtype": "source_user",
-                "tetatet_group_name": tetatet_group_name,
-                "id": tetatet_room_obj.id,
+        await self.channel_layer.group_send(
+            self.room_group_pk, {
+                "type": "chat_message",
+                "time": datetime.datetime.utcnow().isoformat(),
                 "username": self.scope['user'].username,
-                "target_user": target_user,
-                "message": target_message
-            })
-            )
-            await self.save_messages(target_message, tetatet_room_obj)
-        else:
-            await self.channel_layer.group_send(
-                self.room_group_pk, {
-                    "type": "chat_message",
-                    "time": datetime.datetime.utcnow().isoformat(),
-                    "username": self.scope['user'].username,
-                    "message": message
-                }
-            )
+                "message": message
+            }
+        )
 
-            await self.save_messages(message, self.room)
-
-
-
-    # Methods for message's types
+        await self.save_messages(message, self.room)
 
     # When receive message from room group
     async def chat_message(self, event):
@@ -297,8 +315,4 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # When user leaved
     async def user_leave_members(self, event):
-        await self.send(text_data=json.dumps(event))
-
-    # When user send private message
-    async def private_invite(self, event):
         await self.send(text_data=json.dumps(event))

@@ -79,13 +79,11 @@ export function insertToEndElement (text, element) {
 
 // Формирование текста и добавление в конец узла подробного текста из ответа JSON
 export function badResponseProc (response, element) {
-    let status_text = `Ошибка ответа ${response.status}: ${response.statusText}`
     response.json().then((bad_status) => {
     let ext_status = ''
     for (let key in bad_status) {
         ext_status += bad_status[key]
     }
-    status_text += '\<br\>' + ext_status
-    insertToEndElement (status_text, element)
+    insertToEndElement (ext_status, element)
         })
     }

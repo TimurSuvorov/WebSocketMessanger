@@ -51,6 +51,20 @@ class ProfileViewSet(mixins.RetrieveModelMixin,
     serializer_class = UserProfileSerializer
     permission_classes = [IsOwner]
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        tetatet_rooms = Room.objects.filter(author=self.request.user, type='tetatet')
+        for room in tetatet_rooms:
+            room.update_tetatet_label()
+
+        return Response(serializer.data)
+
+
 
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()

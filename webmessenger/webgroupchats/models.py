@@ -54,9 +54,15 @@ class Room(models.Model):
     label = models.CharField(max_length=64,
                              )
 
-
     def __str__(self):
         return f'{self.name}'
+
+    def update_tetatet_label(self):
+        if self.type == 'tetatet':
+            self.authros_list = self.author.all().order_by('pk').values_list('username', flat=True)
+            self.label = f'{self.authros_list[0]}<->{self.authros_list[1]}'
+            self.save()
+            return self.label
 
 
 class AuthorRoom(models.Model):

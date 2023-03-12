@@ -5,7 +5,7 @@ if (getToken()) {
 }
 
 const btn_signin = document.querySelector('.btn-signin');
-const container = document.querySelector('.main');
+const container = document.querySelector('.main_rooms');
 
 
 btn_signin.addEventListener('click', function () {
