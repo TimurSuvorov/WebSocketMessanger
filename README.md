@@ -5,9 +5,9 @@
 ### Функционал: 
 **Стек backend:** DRF + Django Channels. Redis в качестве брокера.
 
-**Взаимодействие backend и fronend**: AJAX.
+**Взаимодействие backend и frontend**: AJAX.
 
-Система аутентификация на основе токенов с помощью библиотеки Djoser.
+Система аутентификации на основе токенов с помощью библиотеки Djoser.
 
 Реализованы функции:
 -персональный чат (подобие "избранное" в Телеграмме);
@@ -22,12 +22,12 @@
 ```
 docker info
 ```
-2. Создайте временную папку и скопируте проект с удаленного репозитория:
+2. Создайте временную папку и скопируйте проект с удаленного репозитория:
 ```
 mkdir WebmessTemp
 cd WebmessTemp
 git clone https://github.com/TimurSuvorov/WebSocketMessanger.git
-cd .\WebSocketMessanger\webmessenger\
+cd /WebSocketMessanger/webmessenger/
 ```
 3. Запустите проект с помощью Docker-compose:
 ```
