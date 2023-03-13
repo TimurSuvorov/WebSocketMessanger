@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  web_app:
+    image: robott88/webmessanger:v1.2
+    container_name: "webmess_app"
+    networks:
+      - app_network
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: "redis"
+    networks:
+      - app_network
+    restart: unless-stopped
+
+
+networks:
+  app_network:

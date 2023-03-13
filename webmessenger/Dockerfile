@@ -7,6 +7,7 @@ WORKDIR /webmessenger_app/
 # set app-environment variables
 ENV PYTHONDONTWRITEBYTECODE 1  # Prevents Python from writing pyc files to disc
 ENV PYTHONUNBUFFERED 1  #Prevents Python from buffering stdout and stderr.
+ENV CELERY_BROKER='redis'
 
 # install dependencies
 RUN pip install --upgrade pip
@@ -15,7 +16,7 @@ RUN chmod +x /webmessenger_app/requirements.txt
 RUN pip install -r requirements.txt
 
 EXPOSE 8000
-ENV CELERY_BROKER='redis'
+
 # copy project
 COPY . /webmessenger_app/
 

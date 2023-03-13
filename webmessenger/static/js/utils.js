@@ -65,7 +65,13 @@ export function requestUpdateOptionFile (method_, body_) {
 
 export async function getProfileInfo () {
     return fetch('http://127.0.0.1:8000/api/v1/auth/users/me/', requestGetOption())
-            .then((response) =>     response.json())
+            .then((response) => {
+                if (response.status === 401) {
+                    return delToken()
+                }
+
+                return response.json()
+            })
             .then((profile_info) => profile_info)
 }
 
